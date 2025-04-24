@@ -175,7 +175,7 @@ rpc({
         if (err.error) {
             term.error(err.error.message);
             term.error('in ' + err.error.file + ' at line ' +
-                                 err.error.at);
+                       err.error.at);
             term.error(err.error.line);
         } else {
             term.error(err.message);
