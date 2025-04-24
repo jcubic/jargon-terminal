@@ -60,6 +60,16 @@ rpc({
                 this.echo(msg, { keepWords: true });
             }
         },
+        record(...args) {
+            if (args[0] === 'start') {
+                term.history_state(true);
+            } else if (args[0] === 'stop') {
+                term.history_state(false);
+            } else {
+                this.echo('save commands in url hash so you can rerun them\n\n' +
+                          'usage: record [stop|start]');
+            }
+        },
         async rfc(...args) {
             if (args[0] == '--help') {
                 term.echo('Browser of RFC documents, using less unix command.\n\n' +
