@@ -112,6 +112,7 @@ rpc({
 
     const term = $('body').terminal(commands, {
         checkArity: false,
+        execHash: true,
         exit: false,
         completion: true,
         greetings: false,
