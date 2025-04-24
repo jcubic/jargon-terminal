@@ -79,8 +79,13 @@ rpc({
             } else {
                 var number = args.length ? args[0] : null;
                 try {
-                    const rfc = await service.rfc(number);
-                    term.less(rfc.replace(/^[\s\n]+|[\s\n]+$/g, ''));
+                    let rfc = await service.rfc(number);
+                    // RFC have leading and trailing whitespace
+                    rfc = rfc.trim();
+                    // RFC don't have any XML formatting, they are text files
+                    rfc = rfc.replace(/</g, '&lt;');
+                    rfc = rfc.replace(/>/g, '&gt;');
+                    term.less(rfc);
                 } catch (err) {
                     print_error(err);
                 }
