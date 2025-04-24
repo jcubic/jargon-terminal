@@ -61,6 +61,7 @@ rpc({
             }
         },
         record(...args) {
+            // toggle storing commands in URL hash
             if (args[0] === 'start') {
                 term.history_state(true);
             } else if (args[0] === 'stop') {
@@ -119,6 +120,8 @@ rpc({
         checkArity: false,
         execHash: true,
         exit: false,
+        execAnimation: true,
+        execHistory: true,
         completion: true,
         greetings: false,
         onInit() {
@@ -141,11 +144,11 @@ rpc({
 
     term.on('click', 'a.jargon', function() {
         const href = $(this).attr('href');
-        invoke(`jargon ${href}`);
+        term.exec(`jargon ${href}`);
         return false;
     }).on('click', 'a.command', function() {
         const command = $(this).attr('href');
-        invoke(command);
+        term.exec(command);
         return false;
     }).on('click', 'a.rfc', function() {
         const command = $(this).attr('href');
@@ -153,17 +156,10 @@ rpc({
         if (term.level() >= 2) {
             commands.rfc(command);
         } else {
-            invoke(`rfc ${command}`);
+            term.exec(`rfc ${command}`);
         }
         return false;
     });
-
-    async function invoke(command) {
-        await term.exec(command);
-        if (term.settings().historyState) {
-            term.save_state(command);
-        }
-    }
 
     function command_list() {
         const list = Object.keys(commands);
@@ -192,9 +188,6 @@ $.terminal.xml_formatter.tags.name = () => '[[!bu;#fff;;jargon]';
 $.terminal.xml_formatter.tags.emphasis = () => '[[b;#fff;]';
 $.terminal.xml_formatter.tags.command = () => '[[!bu;#fff;;command]';
 $.terminal.xml_formatter.tags.rfc = ({ num }) => `[[!bu;yellow;;rfc;${num}]`;
-
-
-
 
 const BASE = 'https://cuho3e4lik.sqlite.cloud:8090';
 
