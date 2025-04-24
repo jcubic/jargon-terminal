@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta name="Description" content=""/>
+    <link rel="shortcut icon" href=""/>
+    <!-- to get icon for the site, you can use this tool:
+    https://realfavicongenerator.net/
+    -->
+    <style>
+:root {
+    --size: 1.2;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jquery"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jcubic/static/js/wcwidth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-polyfills/keyboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/jquery.terminal.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/xml_formatting.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/less.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jcubic/json-rpc/json-rpc.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal/css/jquery.terminal.min.css"/>
+    <script>
+rpc({
+    url: 'https://terminal.jcubic.pl/service.php',
+    promisify: true,
+    error: function(error) {
+        try {
+            error = JSON.parse(error);
+        } catch(e) {}
+        var message;
+        if (error.error) {
+            error = error.error;
+            message = error.message + ' in ' + error.file +
+                '\n[' + error.at + '] ' + error.line;
+        } else {
+            message = error.message || error;
+        }
+        var terminal = $.terminal.active();
+        if (terminal) {
+            terminal.error(message);
+            terminal.resume();
+        } else {
+            alert(message);
+        }
+    }
+}).then(function(service) {
+
+    const commands = {
+        async jargon(...args) {
+            const options = $.terminal.parse_options(args, { boolean: ['s']});
+            // there are options
+            if (options._.length) {
+                const query = options._.join(' ');
+                // search option
+                if (options.s) {
+                    const { data, error } = await jargon_search(query);
+                    if (error) {
+                        this.error(error);
+                    } else {
+                        this.echo(data.map((term) => {
+                            return `<name>${term}</name>`;
+                        }).join('\n'));
+                    }
+                } else {
+                    // normal query
+                    const { data, error } = await jargon_term(query);
+                    if (error) {
+                        this.error(error);
+                    } else {
+                        const entry = format_entry(data);
+                        this.echo(entry.trim(), {
+                            keepWords: true
+                        });
+                    }
+                }
+            } else {
+                const msg = 'This is the Jargon File, a comprehens'+
+                      'ive compendium of hacker slang illuminating m'+
+                      'any aspects of hackish tradition, folklore, a'+
+                      'nd humor.\n\nusage: jargon [-s] &lt;QUERY&gt;'+
+                      '\n\n-s search jargon file';
+                this.echo(msg, { keepWords: true });
+            }
+        },
+        async rfc(...args) {
+            if (args[0] == '--help') {
+                term.echo('Browser of RFC documents, using less unix command.\n\n' +
+                          'If you execute without arguments you will get index page\n' +
+                          'And on that page you can use / followed by text, to search\n' +
+                          'links to RFC documents are clickable');
+            } else {
+                var number = args.length ? args[0] : null;
+                try {
+                    const rfc = await service.rfc(number);
+                    term.less(rfc.replace(/^[\s\n]+|[\s\n]+$/g, ''));
+                } catch (err) {
+                    print_error(err);
+                }
+            }
+        },
+        credits() {
+            return [
+                '',
+                'Tools, libraries, and services used:',
+                '* [[!b;#fff;;;https://terminal.jcubic.pl/]jQuery Terminal]',
+                '* [[!b;#fff;;;https://github.com/patorjk/figlet.js]Figlet.js] + Modular and Rectangles fonts',
+                '* [[!b;#fff;;;http://catb.org/jargon/html/index.html]Jargon File]',
+                '* [[!b;#fff;;;https://www.rfc-editor.org/]RFC Editor]',
+                '* [[!b;#fff;;;https://sqlitecloud.io/]SQLite Cloud]',
+                '* [[!b;#fff;;;https://www.browserstack.com/]BrowserStack]',
+                ''
+            ].join('\n');
+        },
+        help() {
+            const list = formatter.format(command_list());
+            this.echo(`available commands: ${list}`, { keepWords: true });
+        }
+    };
+
+    const formatter = new Intl.ListFormat('en', {
+        style: 'long',
+        type: 'conjunction',
+    });
+
+    const term = $('body').terminal(commands, {
+        checkArity: false,
+        exit: false,
+        completion: true,
+        greetings: false,
+        onInit() {
+            this.echo(() => {
+                const cols = this.cols();
+                if (cols >= 92) {
+                    return greetings_big.innerHTML;
+                } else if (cols >= 57) {
+                    return greetings_medium.innerHTML;
+                } else if (cols >= 35) {
+                    return greetings_small.innerHTML;
+                } else {
+                    return greetings_tiny.innerHTML
+                }
+            });
+        }
+    });
+
+    term.echo('Type <command>jargon "hacker"</command> to get the entry from Jargon File.\nType <command>jargon -s hack</command> to search.\nType <command>help</command> to see other commands.\n');
+
+    term.on('click', 'a.jargon', function() {
+        const href = $(this).attr('href');
+        invoke(`jargon ${href}`);
+        return false;
+    }).on('click', 'a.command', function() {
+        const command = $(this).attr('href');
+        invoke(command);
+        return false;
+    }).on('click', 'a.rfc', function() {
+        const command = $(this).attr('href');
+        // are we inside RFC browser?
+        if (term.level() >= 2) {
+            commands.rfc(command);
+        } else {
+            invoke(`rfc ${command}`);
+        }
+        return false;
+    });
+
+    async function invoke(command) {
+        await term.exec(command);
+        if (term.settings().historyState) {
+            term.save_state(command);
+        }
+    }
+
+    function command_list() {
+        const list = Object.keys(commands);
+        list.push('clear');
+        return list.map(cmd => `<command>${cmd}</command>`);
+    }
+
+    function print_error(err) {
+        if (err.error) {
+            term.error(err.error.message);
+            term.error('in ' + err.error.file + ' at line ' +
+                                 err.error.at);
+            term.error(err.error.line);
+        } else {
+            term.error(err.message);
+        }
+    }
+});
+
+$.terminal.defaults.formatters.unshift([/(rfc\s?([0-9]+))/gi, '<rfc num="$2">$1</rfc>', {
+    echo: true
+}]);
+
+//$.terminal.defaults.formatters.push([/ ([0-9+]\. )/g, '\n$1']);
+$.terminal.xml_formatter.tags.name = () => '[[!bu;#fff;;jargon]';
+$.terminal.xml_formatter.tags.emphasis = () => '[[b;#fff;]';
+$.terminal.xml_formatter.tags.command = () => '[[!bu;#fff;;command]';
+$.terminal.xml_formatter.tags.rfc = ({ num }) => `[[!bu;yellow;;rfc;${num}]`;
+
+
+
+
+const BASE = 'https://cuho3e4lik.sqlite.cloud:8090';
+
+async function post(endpoint, data) {
+    const res = await fetch(`${BASE}/v2/functions/${endpoint}`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            ...data,
+            apikey: 'SBmxqjlBbI1Q0xlz3xr9vMNHBOewByrbAsEGYmfxlKE'
+        })
+    });
+    return res.json();
+}
+
+function jargon_term(query) {
+    return post('jargon-term', { query });
+}
+
+function jargon_search(query) {
+    return post('jargon-search', { query });
+}
+
+function format_entry(entries) {
+    let result = entries.map(function(entry) {
+        let text = '[[b;#fff;]' + entry.term + ']';
+        if (entry.abbrev) {
+            text += ' (' + entry.abbrev.join(', ') + ')';
+        }
+        let re = new RegExp("((?:https?|ftps?)://\\S+)|\\.(?!\\s|\\]\\s)\\)?", "g");
+        let def = entry.def.replace(re, function(text, g) {
+            return g ? g : (text == '.)' ? '.) ' : '. ');
+        });
+        return text + '\n' + def + '\n';
+    }).join('\n');
+    result = $.terminal.format_split(result).map(function(str) {
+        if ($.terminal.is_formatting(str)) {
+            return str.replace(/^\[\[([bu]{2};)/, '[[!$1');
+        }
+        return str;
+    }).join('');
+
+    return result;
+}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+<template id="greetings_big">
+<bold><DodgerBlue>     ___  _______  ______    _______  _______  __    _    _______  ___   ___      _______ 
+    |   ||   _   ||    _ |  |       ||       ||  |  | |  |       ||   | |   |    |       |
+    |   ||  |_|  ||   | ||  |    ___||   _   ||   |_| |  |    ___||   | |   |    |    ___|
+    |   ||       ||   |_||_ |   | __ |  | |  ||       |  |   |___ |   | |   |    |   |___ 
+ ___|   ||       ||    __  ||   ||  ||  |_|  ||  _    |  |    ___||   | |   |___ |    ___|
+|       ||   _   ||   |  | ||   |_| ||       || | |   |  |   |    |   | |       ||   |___ 
+|_______||__| |__||___|  |_||_______||_______||_|  |__|  |</DodgerBlue><yellow>___</yellow><DodgerBlue>|</DodgerBlue><yellow>_</yellow><DodgerBlue>   |___| |____ </DodgerBlue><yellow>_</yellow><DodgerBlue> ||_____ </DodgerBlue><yellow>_</yellow><DodgerBlue>|</DodgerBlue>
+                                                         <yellow>|_   _|___ ___ _____|_|___ ___| |</yellow>
+                                                           <yellow>| | | -_|  _|     | |   | .'| |</yellow>
+                                                           <yellow>|_| |___|_| |_|_|_|_|_|_|__,|_|</yellow></bold>
+                                                                                <DodgerBlue>by</DodgerBlue> <white><a href="https://x.com/jcubic">@jcubic</a></white></bold>
+</template>
+<template id="greetings_medium">
+<bold><DodgerBlue>     ___  _______  ______    _______  _______  __    _ 
+    |   ||   _   ||    _ |  |       ||       ||  |  | |
+    |   ||  |_|  ||   | ||  |    ___||   _   ||   |_| |
+    |   ||       ||   |_||_ |   | __ |  | |  ||       |
+ ___|   ||       ||    __  ||   ||  ||  |_|  ||  _    |
+|       ||   _   ||   |  | ||   |_| ||       || | |   |
+|_______||__| |__||___|__|_||_______||_______||_|__|__|
+                      |       ||   | |   |    |       |
+                      |    ___||   | |   |    |    ___|
+                      |   |___ |   | |   |    |   |___ 
+                      |    ___||   | |   |___ |    ___|
+                      |   |    |   | |       ||   |___ </DodgerBlue>
+                      <DodgerBlue>|</DodgerBlue><yellow>___</yellow><DodgerBlue>|</DodgerBlue><yellow>_</yellow><DodgerBlue>   |___| |____ </DodgerBlue><yellow>_</yellow><DodgerBlue> ||_____ </DodgerBlue><yellow>_</yellow><DodgerBlue>|</DodgerBlue>
+                      <yellow>|_   _|___ ___ _____|_|___ ___| |</yellow>
+                        <yellow>| | | -_|  _|     | |   | .'| |</yellow>
+                        <yellow>|_| |___|_| |_|_|_|_|_|_|__,|_|</yellow>
+                                             <DodgerBlue>by</DodgerBlue> <white><a href="https://x.com/jcubic">@jcubic</a></white></bold>
+</template>
+<template id="greetings_small">
+<bold><DodgerBlue>    __
+ __|  | ___  ___  ___  ___  ___
+|  |  || .'||  _|| . || . ||   |
+|_____||__,||_|  |_  ||___||_|_|
+ _______  ___   _|___|   _______ 
+|       ||   | |   |    |       |
+|    ___||   | |   |    |    ___|
+|   |___ |   | |   |    |   |___ 
+|    ___||   | |   |___ |    ___|
+|   |    |   | |       ||   |___ </DodgerBlue>
+<DodgerBlue>|</DodgerBlue><yellow>___</yellow><DodgerBlue>|</DodgerBlue><yellow>_</yellow><DodgerBlue>   |___| |____ </DodgerBlue><yellow>_</yellow><DodgerBlue> ||_____ </DodgerBlue><yellow>_</yellow><DodgerBlue>|</DodgerBlue>
+<yellow>|_   _|___ ___ _____|_|___ ___| |</yellow>
+  <yellow>| | | -_|  _|     | |   | .'| |</yellow>
+  <yellow>|_| |___|_| |_|_|_|_|_|_|__,|_|</yellow>
+                       <DodgerBlue>by</DodgerBlue> <white><a href="https://x.com/jcubic">@jcubic</a></white></bold>
+</template>
+<template id="greetings_tiny">
+<bold><DodgerBlue>Jargon File</DodgerBlue> <yellow>Terminal</yellow>
+          <DodgerBlue>by</DodgerBlue> <white><a href="https://x.com/jcubic">@jcubic</a></white></bold></bold>
+</template>
+<a target="_top" class="github-corner" href="https://github.com/jcubic/jcubic/jargon-terminal" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; z-index: 10; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+</body>
+</html>
