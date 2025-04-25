@@ -57,7 +57,8 @@ rpc({
                       'any aspects of hackish tradition, folklore, a'+
                       'nd humor.\n\nusage: jargon [-s] &lt;QUERY&gt;'+
                       '\n\n-s search jargon file';
-                this.echo(msg, { keepWords: true });
+                const logo = `<bold><white>${jargon.innerHTML}</white></bold>`;
+                this.echo(`${logo}\n${msg}`, { keepWords: true });
             }
         },
         record(...args) {
