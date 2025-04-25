@@ -145,7 +145,13 @@ rpc({
         }
     });
 
-    term.echo('Type <command>jargon "hacker"</command> to get the entry from Jargon File.\nType <command>jargon -s hack</command> to search.\nType <command>help</command> to see other commands.\n');
+    term.echo([
+        'Type <command>jargon "hacker"</command> to get the entry from Jargon File.',
+        'Type <command>jargon -s hack</command> to search.',
+        'Type <command>jargon</command> to see help screen.',
+        'Type <command>help</command> to see other commands.',
+        ''
+    ].join('\n'), { keepWords: true });
 
     term.on('click', 'a.jargon', function() {
         const href = $(this).attr('href');
