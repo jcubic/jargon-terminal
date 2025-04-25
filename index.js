@@ -108,7 +108,10 @@ rpc({
         },
         help() {
             const list = formatter.format(command_list());
-            this.echo(`available commands: ${list}`, { keepWords: true });
+            this.echo(`Available commands: ${list}.`, { keepWords: true });
+            this.echo('An <command>rfc</command> command use simplifed unix less command.\n', {
+                keepWords: true
+            });
         }
     };
 
