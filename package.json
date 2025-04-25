@@ -1,0 +1,14 @@
+{
+  "name": "jargon-terminal",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "Jakub T. Jankiewicz <jcubic@onet.pl> (https://jcubic.pl/me/)",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "sqlite3": "^5.1.7",
+    "xmldom": "^0.6.0"
+  }
+}
