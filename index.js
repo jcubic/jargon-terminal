@@ -128,6 +128,7 @@ rpc({
         execHistory: true,
         completion: true,
         greetings: false,
+        prompt: '<DodgerBlue>~</DodgerBlue>&gt; ',
         onInit() {
             this.echo(() => {
                 const cols = this.cols();
