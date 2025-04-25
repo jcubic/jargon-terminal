@@ -99,7 +99,7 @@ rpc({
             term.echo(text, { ansi: true });
         },
         credits() {
-            return [
+            const text = [
                 '',
                 'Tools, libraries, and services used:',
                 '* [[!b;#fff;;;https://terminal.jcubic.pl/]jQuery Terminal]',
@@ -111,6 +111,7 @@ rpc({
                 '* DMR Artwork by [[!b;#fff;;;https://x.com/SanderFocus]Sander van den Borne]',
                 ''
             ].join('\n');
+            this.echo(text, { keepWords: true });
         },
         help() {
             const list = formatter.format(command_list());
