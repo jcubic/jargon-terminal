@@ -93,6 +93,11 @@ rpc({
                 }
             }
         },
+        async dmr() {
+            const res = await fetch('./unix.jq');
+            const text = await res.text();
+            term.echo(text, { ansi: true });
+        },
         credits() {
             return [
                 '',
@@ -103,6 +108,7 @@ rpc({
                 '* [[!b;#fff;;;https://www.rfc-editor.org/]RFC Editor]',
                 '* [[!b;#fff;;;https://sqlitecloud.io/]SQLite Cloud]',
                 '* [[!b;#fff;;;https://www.browserstack.com/]BrowserStack]',
+                '* DMR Artwork by [[!b;#fff;;;https://x.com/SanderFocus]Sander van den Borne]',
                 ''
             ].join('\n');
         },
