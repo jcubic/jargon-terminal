@@ -104,7 +104,7 @@ rpc({
                 'Tools, libraries, and services used:',
                 '* [[!b;#fff;;;https://terminal.jcubic.pl/]jQuery Terminal]',
                 '* [[!b;#fff;;;https://github.com/patorjk/figlet.js]Figlet.js] + Modular and Rectangles fonts',
-                '* [[!b;#fff;;;http://catb.org/jargon/html/index.html]Jargon File]',
+                '* [[!b;#fff;;;http://catb.org/jargon/html/index.html]Jargon File] 4.4.7',
                 '* [[!b;#fff;;;https://www.rfc-editor.org/]RFC Editor]',
                 '* [[!b;#fff;;;https://sqlitecloud.io/]SQLite Cloud]',
                 '* [[!b;#fff;;;https://www.browserstack.com/]BrowserStack]',
