@@ -1,3 +1,5 @@
+const delay = 80;
+
 const commands = {
     async jargon(...args) {
         const options = $.terminal.parse_options(args, { boolean: ['s']});
@@ -147,11 +149,11 @@ term.echo([
 
 term.on('click', 'a.jargon', function() {
     const href = $(this).attr('href');
-    term.exec(`jargon ${href}`);
+    term.exec(`jargon ${href}`, { typing: true, delay });
     return false;
 }).on('click', 'a.command', function() {
     const command = $(this).attr('href');
-    term.exec(command);
+    term.exec(command, { typing: true, delay });
     return false;
 }).on('click', 'a.rfc', function() {
     const command = $(this).attr('href');
@@ -159,7 +161,7 @@ term.on('click', 'a.jargon', function() {
     if (term.level() >= 2) {
         commands.rfc.call(term, +command);
     } else {
-        term.exec(`rfc ${command}`);
+        term.exec(`rfc ${command}`, { typing: true, delay });
     }
     return false;
 });
